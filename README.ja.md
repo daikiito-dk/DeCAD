@@ -1,6 +1,7 @@
 # DeCAD
 
 [![CI](https://github.com/daikiito-dk/DeCAD/actions/workflows/ci.yml/badge.svg)](https://github.com/daikiito-dk/DeCAD/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/decad.svg)](https://pypi.org/project/decad/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 
@@ -44,15 +45,19 @@ DeCADは、リバースCADと製品解体のためのオープンソースツー
 
 ## インストール
 
-プレリリース版です。チェックアウトからインストールしてください（Python 3.10以上、[uv](https://docs.astral.sh/uv/) 推奨）：
+PyPIで公開済みです（Python 3.10以上）：
+
+```bash
+pip install decad
+```
+
+開発用にチェックアウトから入れる場合（[uv](https://docs.astral.sh/uv/) 推奨）：
 
 ```bash
 git clone https://github.com/daikiito-dk/DeCAD.git
 cd DeCAD
 make setup        # .venvを作成し -e ".[dev]" をインストール
 ```
-
-通常のpipでも動きます：`python -m venv .venv && pip install -e .`
 
 ## CLI
 

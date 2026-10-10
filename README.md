@@ -1,6 +1,7 @@
 # DeCAD
 
 [![CI](https://github.com/daikiito-dk/DeCAD/actions/workflows/ci.yml/badge.svg)](https://github.com/daikiito-dk/DeCAD/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/decad.svg)](https://pypi.org/project/decad/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 
@@ -44,15 +45,19 @@ Three things worth noticing:
 
 ## Install
 
-Pre-release; install from a checkout (Python 3.10+, [uv](https://docs.astral.sh/uv/) recommended):
+Available on PyPI (Python 3.10+):
+
+```bash
+pip install decad
+```
+
+For development, work from a checkout ([uv](https://docs.astral.sh/uv/) recommended):
 
 ```bash
 git clone https://github.com/daikiito-dk/DeCAD.git
 cd DeCAD
 make setup        # creates .venv and installs -e ".[dev]"
 ```
-
-Plain pip works too: `python -m venv .venv && pip install -e .`
 
 ## CLI
 
