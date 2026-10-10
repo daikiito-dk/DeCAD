@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "decad"
+version = "0.1.0"
+description = "DeCAD — open reverse-CAD toolkit for product disassembly, built on the OD-BOM (Open Disassembly & Reverse BOM) format."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+  { name = "DeCAD contributors" },
+]
+keywords = [
+  "disassembly",
+  "reverse-cad",
+  "reverse-bom",
+  "bill-of-materials",
+  "circular-economy",
+  "recycling",
+  "ewaste",
+  "robotics",
+  "cad",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Manufacturing",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: File Formats",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "jsonschema>=4.18",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+  "ruff>=0.4",
+]
+
+[project.scripts]
+decad = "decad.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/daikiito-dk/DeCAD"
+Documentation = "https://github.com/daikiito-dk/DeCAD/blob/main/docs/specification.md"
+Issues = "https://github.com/daikiito-dk/DeCAD/issues"
+Changelog = "https://github.com/daikiito-dk/DeCAD/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/decad"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src",
+  "/schemas",
+  "/examples",
+  "/docs",
+  "/tests",
+  "/README.ja.md",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "C4", "SIM"]

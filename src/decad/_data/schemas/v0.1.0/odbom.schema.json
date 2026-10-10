@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-disassembly.org/schemas/v0.1.0/odbom.schema.json",
+  "title": "OD-BOM Document",
+  "description": "An Open Disassembly & Reverse BOM (OD-BOM) document: the structural decomposition, constraint graph, and robotic removal plan of a physical product. Version 0.1.0.",
+  "type": "object",
+  "required": ["metadata", "nodes", "graph_edges", "disassembly_execution_plan"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URI of the OD-BOM JSON Schema this document conforms to."
+    },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "nodes": {
+      "type": "array",
+      "description": "Physical entities: parts, fasteners, bonds, sub-assemblies.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "graph_edges": { "$ref": "#/$defs/graphEdges" },
+    "disassembly_execution_plan": {
+      "type": "array",
+      "description": "Ordered robotic removal steps. Array order defines execution order.",
+      "items": { "$ref": "#/$defs/step" }
+    }
+  },
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "required": ["odbom_version", "product_id", "name"],
+      "additionalProperties": true,
+      "properties": {
+        "odbom_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$",
+          "description": "Version of the OD-BOM specification this document targets."
+        },
+        "product_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable identifier for the product, e.g. a URN."
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "created_by": {
+          "type": "string",
+          "description": "Author, tool, or pipeline that produced the document."
+        },
+        "source_data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "scan_type": {
+              "type": "string",
+              "examples": ["CT", "LiDAR", "CT_and_LiDAR", "photogrammetry"]
+            },
+            "cad_reconstruction_confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "vec3": {
+      "type": "array",
+      "description": "3D vector [x, y, z] in the product's local coordinate frame. Linear units: millimeters.",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "direction": {
+      "description": "3D direction vector [x, y, z]. MUST be non-zero; SHOULD be normalized to unit length.",
+      "allOf": [{ "$ref": "#/$defs/vec3" }]
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "type", "label"],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": { "description": "Vendor extension; tools MUST preserve but not interpret." }
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "description": "Unique node identifier within the document."
+        },
+        "type": {
+          "enum": ["structural_part", "fastener", "bonding", "sub_assembly"],
+          "description": "structural_part: rigid mechanical body; fastener: removable mechanical joiner; bonding: non-mechanical joiner (adhesive, weld, solder); sub_assembly: cluster removable as one unit before internal disassembly."
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "cad_ref": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "format": { "type": "string", "examples": ["STEP", "STL", "OpenSCAD", "FreeCAD"] },
+            "file_path": { "type": "string" },
+            "feature_history": {
+              "type": "string",
+              "description": "Script or feature sequence able to regenerate the geometry."
+            }
+          }
+        },
+        "material": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "primary_material": { "type": "string" },
+            "recyclability_category": { "type": "string" },
+            "hazardous": { "type": "boolean" },
+            "hazard_details": { "type": "string" }
+          }
+        },
+        "bounding_box": {
+          "type": "object",
+          "required": ["min", "max"],
+          "additionalProperties": false,
+          "properties": {
+            "min": { "$ref": "#/$defs/vec3" },
+            "max": { "$ref": "#/$defs/vec3" }
+          }
+        },
+        "fastener_attributes": { "$ref": "#/$defs/fastenerAttributes" },
+        "bonding_attributes": { "$ref": "#/$defs/bondingAttributes" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "fastener" } }, "required": ["type"] },
+          "then": { "required": ["fastener_attributes"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "bonding" } }, "required": ["type"] },
+          "then": { "required": ["bonding_attributes"] }
+        }
+      ]
+    },
+    "fastenerAttributes": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "subtype": { "type": "string", "examples": ["bolt", "screw", "clip", "snap_fit", "rivet"] },
+        "thread_size": { "type": "string", "examples": ["M6"] },
+        "head_type": { "type": "string", "examples": ["Torx_T25", "hex_socket", "Pentalobe_P2"] },
+        "nominal_torque_nm": { "type": "number", "minimum": 0 },
+        "fastener_count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of physical fasteners this node represents."
+        }
+      }
+    },
+    "bondingAttributes": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "subtype": { "enum": ["adhesive", "sealant", "solder", "weld", "tape", "other"] },
+        "bond_area_mm2": { "type": "number", "minimum": 0 },
+        "removal_method_hint": { "type": "string" }
+      }
+    },
+    "graphEdges": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fasteners": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fastenerEdge" }
+        },
+        "bonds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bondEdge" }
+        },
+        "interferences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/interferenceEdge" }
+        },
+        "precedences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/precedenceEdge" }
+        }
+      }
+    },
+    "fastenerEdge": {
+      "type": "object",
+      "required": ["fastener_id", "retains", "anchored_to", "removal_method"],
+      "additionalProperties": false,
+      "properties": {
+        "fastener_id": {
+          "type": "string",
+          "description": "Node id of type 'fastener'."
+        },
+        "retains": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Nodes held in place by this fastener; each becomes removable only after the fastener."
+        },
+        "anchored_to": {
+          "type": "string",
+          "description": "Node the fastener threads into or clips onto (informational in v0.1)."
+        },
+        "removal_method": { "$ref": "#/$defs/removalMethod" }
+      }
+    },
+    "bondEdge": {
+      "type": "object",
+      "required": ["bond_id", "joins", "removal_method"],
+      "additionalProperties": false,
+      "properties": {
+        "bond_id": {
+          "type": "string",
+          "description": "Node id of type 'bonding'."
+        },
+        "joins": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "string" },
+          "description": "The two nodes the bond joins; both become removable only after the bond is released."
+        },
+        "removal_method": { "$ref": "#/$defs/removalMethod" }
+      }
+    },
+    "interferenceEdge": {
+      "type": "object",
+      "required": ["blocker", "blocked_node", "blocked_vectors"],
+      "additionalProperties": false,
+      "properties": {
+        "blocker": { "type": "string" },
+        "blocked_node": { "type": "string" },
+        "blocked_vectors": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/direction" },
+          "description": "Removal directions blocked by the blocker."
+        },
+        "description": { "type": "string" }
+      }
+    },
+    "precedenceEdge": {
+      "type": "object",
+      "required": ["before_step_id", "after_step_id"],
+      "additionalProperties": false,
+      "properties": {
+        "before_step_id": { "type": "integer", "minimum": 1 },
+        "after_step_id": { "type": "integer", "minimum": 1 },
+        "description": { "type": "string" }
+      }
+    },
+    "removalMethod": {
+      "description": "How a fastener or bond is intended to be released.",
+      "enum": ["unscrew", "unclip", "pry_open", "cut", "apply_heat", "drill_out", "destruct_cut", "manual"]
+    },
+    "step": {
+      "type": "object",
+      "required": ["step_id", "action", "target_nodes"],
+      "additionalProperties": true,
+      "properties": {
+        "step_id": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Stable identifier; must be unique within the plan but need not be sequential."
+        },
+        "action": {
+          "enum": ["unfasten", "cut_adhesive", "pick_and_lift", "pry_open", "drill_out", "destruct_cut"]
+        },
+        "target_nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Nodes this step removes from the assembly (unfasten removes the fastener, cut_adhesive releases the bond, etc.)."
+        },
+        "required_tool": {
+          "type": "object",
+          "required": ["tool_type"],
+          "additionalProperties": true,
+          "properties": {
+            "tool_type": { "type": "string" },
+            "bit": { "type": "string" },
+            "max_torque_nm": { "type": "number", "exclusiveMinimum": 0 },
+            "min_payload_kg": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "trajectory_vector": { "$ref": "#/$defs/direction" },
+        "clearance_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "fallback_strategy": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Condition name -> counter-strategy, e.g. on_stripping: drill_out."
+        }
+      }
+    }
+  }
+}

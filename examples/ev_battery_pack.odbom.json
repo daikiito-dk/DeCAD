@@ -1,0 +1,108 @@
+{
+  "$schema": "https://open-disassembly.org/schemas/v0.1.0/odbom.schema.json",
+  "metadata": {
+    "odbom_version": "0.1.0",
+    "product_id": "URN:PRODUCT:EV-BATTERY-PACK-2026",
+    "name": "Generic EV Battery Pack Module A",
+    "description": "Reference teardown model: top cover, fastener group, cell array.",
+    "created_by": "Reverse-CAD-AI Engine v2.4",
+    "source_data": {
+      "scan_type": "CT_and_LiDAR",
+      "cad_reconstruction_confidence": 0.94
+    }
+  },
+  "nodes": [
+    {
+      "id": "node_top_cover",
+      "type": "structural_part",
+      "label": "Aluminum Top Housing Cover",
+      "cad_ref": {
+        "format": "STEP",
+        "file_path": "geometry/top_cover.step",
+        "feature_history": "scripts/top_cover_features.py"
+      },
+      "material": {
+        "primary_material": "Aluminum 6061-T6",
+        "recyclability_category": "High-Value Metals",
+        "hazardous": false
+      },
+      "bounding_box": {
+        "min": [-400.0, -300.0, 0.0],
+        "max": [400.0, 300.0, 20.0]
+      }
+    },
+    {
+      "id": "node_m6_screw_01",
+      "type": "fastener",
+      "label": "M6 Torx Head Screw",
+      "fastener_attributes": {
+        "subtype": "bolt",
+        "thread_size": "M6",
+        "head_type": "Torx_T25",
+        "nominal_torque_nm": 9.5,
+        "fastener_count": 12
+      },
+      "material": {
+        "primary_material": "Stainless Steel 304",
+        "hazardous": false
+      }
+    },
+    {
+      "id": "node_cell_array_01",
+      "type": "sub_assembly",
+      "label": "Li-Ion Pouch Cell Array",
+      "material": {
+        "primary_material": "Li-Ion NMC811",
+        "recyclability_category": "Battery Recycling / Black Mass",
+        "hazardous": true,
+        "hazard_details": "High Voltage / Thermal Runaway Risk"
+      }
+    }
+  ],
+  "graph_edges": {
+    "fasteners": [
+      {
+        "fastener_id": "node_m6_screw_01",
+        "retains": ["node_top_cover"],
+        "anchored_to": "node_cell_array_01",
+        "removal_method": "unscrew"
+      }
+    ],
+    "interferences": [
+      {
+        "blocker": "node_top_cover",
+        "blocked_node": "node_cell_array_01",
+        "blocked_vectors": [[0.0, 0.0, 1.0]],
+        "description": "Cell array cannot be pulled vertically along +Z until top cover is removed."
+      }
+    ]
+  },
+  "disassembly_execution_plan": [
+    {
+      "step_id": 1,
+      "action": "unfasten",
+      "target_nodes": ["node_m6_screw_01"],
+      "required_tool": {
+        "tool_type": "end_effector_screwdriver",
+        "bit": "Torx_T25",
+        "max_torque_nm": 15.0
+      },
+      "trajectory_vector": [0.0, 0.0, 1.0],
+      "fallback_strategy": {
+        "on_stripping": "drill_out",
+        "on_seizure": "apply_heat_induction"
+      }
+    },
+    {
+      "step_id": 2,
+      "action": "pick_and_lift",
+      "target_nodes": ["node_top_cover"],
+      "required_tool": {
+        "tool_type": "vacuum_gripper_array",
+        "min_payload_kg": 4.5
+      },
+      "trajectory_vector": [0.0, 0.0, 1.0],
+      "clearance_mm": 50.0
+    }
+  ]
+}

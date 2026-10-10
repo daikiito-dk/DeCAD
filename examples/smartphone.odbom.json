@@ -1,0 +1,210 @@
+{
+  "$schema": "https://open-disassembly.org/schemas/v0.1.0/odbom.schema.json",
+  "metadata": {
+    "odbom_version": "0.1.0",
+    "product_id": "URN:PRODUCT:SMARTPHONE-SM-2026",
+    "name": "Generic 6.1-inch Smartphone",
+    "description": "Reference teardown model: screws, two adhesive bonds, display and battery extraction.",
+    "created_by": "Manual teardown, verified by CT scan",
+    "source_data": {
+      "scan_type": "CT",
+      "cad_reconstruction_confidence": 0.71
+    }
+  },
+  "nodes": [
+    {
+      "id": "node_mid_frame",
+      "type": "structural_part",
+      "label": "Aluminum Mid-Frame",
+      "material": {
+        "primary_material": "Aluminum 6013",
+        "recyclability_category": "High-Value Metals",
+        "hazardous": false
+      }
+    },
+    {
+      "id": "node_back_glass",
+      "type": "structural_part",
+      "label": "Back Glass Panel",
+      "material": {
+        "primary_material": "Soda-lime Glass",
+        "recyclability_category": "Glass",
+        "hazardous": false
+      }
+    },
+    {
+      "id": "node_display",
+      "type": "structural_part",
+      "label": "OLED Display Assembly",
+      "material": {
+        "primary_material": "Glass / OLED stack",
+        "hazardous": false
+      }
+    },
+    {
+      "id": "node_logic_board",
+      "type": "structural_part",
+      "label": "Logic Board (PCBA)",
+      "material": {
+        "primary_material": "FR4 PCB with ICs",
+        "recyclability_category": "PCB / Precious Metals",
+        "hazardous": false
+      }
+    },
+    {
+      "id": "node_battery",
+      "type": "sub_assembly",
+      "label": "Li-Polymer Battery",
+      "material": {
+        "primary_material": "Li-Polymer",
+        "recyclability_category": "Battery Recycling / Black Mass",
+        "hazardous": true,
+        "hazard_details": "Fire risk if punctured; inspect for swelling before removal."
+      }
+    },
+    {
+      "id": "node_pentalobe_screws",
+      "type": "fastener",
+      "label": "Pentalobe P2 Bottom Screws",
+      "fastener_attributes": {
+        "subtype": "screw",
+        "thread_size": "M1.6",
+        "head_type": "Pentalobe_P2",
+        "nominal_torque_nm": 0.17,
+        "fastener_count": 2
+      },
+      "material": {
+        "primary_material": "Stainless Steel 304",
+        "hazardous": false
+      }
+    },
+    {
+      "id": "node_display_adhesive",
+      "type": "bonding",
+      "label": "Display Perimeter Adhesive",
+      "bonding_attributes": {
+        "subtype": "adhesive",
+        "bond_area_mm2": 950.0
+      },
+      "material": {
+        "primary_material": "PU adhesive",
+        "hazardous": false
+      }
+    },
+    {
+      "id": "node_battery_adhesive",
+      "type": "bonding",
+      "label": "Battery Stretch-Release Adhesive",
+      "bonding_attributes": {
+        "subtype": "adhesive",
+        "bond_area_mm2": 2400.0
+      },
+      "material": {
+        "primary_material": "Acrylic adhesive",
+        "hazardous": false
+      }
+    }
+  ],
+  "graph_edges": {
+    "fasteners": [
+      {
+        "fastener_id": "node_pentalobe_screws",
+        "retains": ["node_display"],
+        "anchored_to": "node_mid_frame",
+        "removal_method": "unscrew"
+      }
+    ],
+    "bonds": [
+      {
+        "bond_id": "node_display_adhesive",
+        "joins": ["node_display", "node_mid_frame"],
+        "removal_method": "apply_heat"
+      },
+      {
+        "bond_id": "node_battery_adhesive",
+        "joins": ["node_battery", "node_mid_frame"],
+        "removal_method": "cut"
+      }
+    ],
+    "interferences": [
+      {
+        "blocker": "node_display",
+        "blocked_node": "node_battery",
+        "blocked_vectors": [[0.0, 0.0, 1.0]],
+        "description": "Battery sits under the display stack and cannot be lifted along +Z until the display is off."
+      }
+    ],
+    "precedences": [
+      {
+        "before_step_id": 3,
+        "after_step_id": 5,
+        "description": "Display must come off before the battery so the battery flex is not stressed."
+      }
+    ]
+  },
+  "disassembly_execution_plan": [
+    {
+      "step_id": 1,
+      "action": "unfasten",
+      "target_nodes": ["node_pentalobe_screws"],
+      "required_tool": {
+        "tool_type": "end_effector_screwdriver",
+        "bit": "Pentalobe_P2",
+        "max_torque_nm": 0.5
+      },
+      "trajectory_vector": [0.0, -1.0, 0.0],
+      "fallback_strategy": {
+        "on_stripping": "drill_out"
+      }
+    },
+    {
+      "step_id": 2,
+      "action": "cut_adhesive",
+      "target_nodes": ["node_display_adhesive"],
+      "required_tool": {
+        "tool_type": "heated_suction_handle",
+        "temperature_c": 80.0
+      },
+      "trajectory_vector": [0.0, 0.0, 1.0],
+      "clearance_mm": 2.0
+    },
+    {
+      "step_id": 3,
+      "action": "pick_and_lift",
+      "target_nodes": ["node_display"],
+      "required_tool": {
+        "tool_type": "vacuum_gripper",
+        "min_payload_kg": 0.08
+      },
+      "trajectory_vector": [0.0, 0.0, 1.0],
+      "clearance_mm": 15.0
+    },
+    {
+      "step_id": 4,
+      "action": "cut_adhesive",
+      "target_nodes": ["node_battery_adhesive"],
+      "required_tool": {
+        "tool_type": "adhesive_pull_tab_gripper"
+      },
+      "trajectory_vector": [0.0, 0.0, 1.0],
+      "fallback_strategy": {
+        "on_tear": "apply_solvent",
+        "on_stuck": "apply_heat"
+      }
+    },
+    {
+      "step_id": 5,
+      "action": "pick_and_lift",
+      "target_nodes": ["node_battery"],
+      "required_tool": {
+        "tool_type": "soft_jaw_gripper",
+        "min_payload_kg": 0.06
+      },
+      "trajectory_vector": [0.0, 0.0, 1.0],
+      "clearance_mm": 8.0,
+      "fallback_strategy": {
+        "on_puncture_risk": "destruct_cut"
+      }
+    }
+  ]
+}
